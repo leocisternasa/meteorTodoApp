@@ -11,7 +11,12 @@ function Task({ task, onCheckBoxClick, onDeleteClick }) {
         readOnly
       />
       <span>{text}</span>
-      <button onClick={() => onDeleteClick(task)}>&times;</button>
+      <button
+        className="tasks_delete_button"
+        onClick={() => onDeleteClick(task)}
+      >
+        &times;
+      </button>
     </li>
   );
 }
