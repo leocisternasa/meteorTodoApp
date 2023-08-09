@@ -1,34 +1,33 @@
 import React, { useState, Fragment } from "react";
 import Task from "./Task.jsx";
 import { useTracker } from "meteor/react-meteor-data";
-import { TasksCollection } from "../api/TasksCollection.js";
+import { TasksCollection } from "../db/TasksCollection.js";
 import TaskForm from "../ui/TaskForm.jsx";
 import { Meteor } from "meteor/meteor";
 import { LoginForm } from "./LoginForm.jsx";
 const toggleChecked = ({ _id, isChecked }) => {
-  TasksCollection.update(_id, {
-    $set: {
-      isChecked: !isChecked,
-    },
-  });
+  Meteor.call("tasks.setIsChecked", _id, !isChecked);
 };
 
-const deleteTask = ({ _id }) => TasksCollection.remove(_id);
+const deleteTask = ({ _id }) => Meteor.call("tasks.remove", _id);
 
 export const App = () => {
   const user = useTracker(() => Meteor.user());
   const [hideCompleted, setHideCompleted] = useState(false);
   const hideCompletedFilter = { isChecked: { $ne: true } };
 
-  const userFilter = user ? { userID: user._id } : {};
+  const userFilter = user ? { userId: user._id } : {};
   const pendingOnlyFilter = { ...hideCompletedFilter, ...userFilter };
   const tasks = useTracker(() => {
     if (!user) {
       return [];
     }
-    return TasksCollection.find(hideCompleted ? pendingOnlyFilter : {}, {
-      sort: { createdAt: -1 },
-    }).fetch();
+    return TasksCollection.find(
+      hideCompleted ? pendingOnlyFilter : userFilter,
+      {
+        sort: { createdAt: -1 },
+      }
+    ).fetch();
   });
 
   const pendingTasksCount = useTracker(() => {
@@ -48,7 +47,10 @@ export const App = () => {
         <div className="app-bar">
           <div className="app-header">
             <h1>Welcome to Todo App with Meteor!</h1>
-            <h2>Tareas Pendientes: {pendingTasksTitle}</h2>
+            <h2>
+              Tareas Pendientes:
+              {pendingTasksTitle || <span> Ninguna tarea pendiente</span>}
+            </h2>
           </div>
         </div>
       </header>
@@ -58,7 +60,7 @@ export const App = () => {
             <div className="user" onClick={logout}>
               Log out: {user.username || user.profile.name}
             </div>
-            <TaskForm user={user} />
+            <TaskForm />
             <div className="filter">
               <button onClick={() => setHideCompleted(!hideCompleted)}>
                 {hideCompleted ? "Show All Tasks" : "Hide Completed Tasks"}
